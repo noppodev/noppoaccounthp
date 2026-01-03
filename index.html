@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noppo Auth | 自由なWebのための共通ログイン</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+JP:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            scroll-behavior: smooth;
+        }
+
+        .gradient-bg {
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .nav-glass {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .code-block {
+            background-color: #0f172a;
+            color: #e2e8f0;
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            font-size: 0.825rem;
+            line-height: 1.6;
+            overflow-x: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .hero-blob {
+            filter: blur(80px);
+            opacity: 0.4;
+            z-index: -1;
+        }
+
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        details summary::-webkit-details-marker {
+            display:none;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 nav-glass">
+        <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 gradient-bg rounded-lg flex items-center justify-center">
+                    <i class="fas fa-key text-white text-xs"></i>
+                </div>
+                <span class="text-xl font-bold tracking-tight">Noppo Auth</span>
+            </div>
+            <div class="hidden md:flex space-x-8 text-sm font-medium">
+                <a href="#about" class="hover:text-indigo-600 transition">成り立ち</a>
+                <a href="#benefits" class="hover:text-indigo-600 transition">メリット</a>
+                <a href="#developers" class="text-slate-500 hover:text-indigo-600 transition font-bold">開発者ガイド</a>
+            </div>
+            
+            <div id="auth-status">
+                <button onclick="goToLogin()" class="bg-indigo-600 text-white px-5 py-2 rounded-full text-sm font-semibold hover:bg-indigo-700 transition">
+                    ログイン/登録
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="relative pt-40 pb-32 md:pt-56 md:pb-48 px-4 overflow-hidden min-h-[90vh] flex items-center">
+        <div class="absolute hero-blob top-1/4 left-1/4 w-96 h-96 bg-indigo-400 rounded-full"></div>
+        <div class="absolute hero-blob bottom-1/4 right-1/4 w-96 h-96 bg-purple-400 rounded-full"></div>
+
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center relative z-10">
+            <div class="md:w-1/2 text-center md:text-left mb-16 md:mb-0">
+                <h1 class="text-5xl md:text-7xl font-bold mb-8 leading-[1.15]">
+                    ひとつの鍵で、<br>
+                    <span class="bg-clip-text text-transparent gradient-bg">自由なWeb</span>を歩こう。
+                </h1>
+                <p class="text-xl text-slate-600 mb-10 leading-relaxed pr-4 max-w-lg mx-auto md:mx-0">
+                    Noppo Studioの各サービスを繋ぐために開発された、実利重視の認証基盤。現在は外部の開発者にも、余計な手間なしで開放されています。
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center md:justify-start items-center">
+                    <button onclick="goToLogin()" class="whitespace-nowrap px-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition shadow-2xl shadow-indigo-200 text-lg text-center">
+                        今すぐアカウント作成
+                    </button>
+                    <a href="#about" class="whitespace-nowrap px-8 py-4 bg-white border border-slate-200 text-slate-700 rounded-2xl font-bold hover:bg-slate-50 transition text-lg text-center">
+                        成り立ち（本音）
+                    </a>
+                </div>
+            </div>
+            <div class="md:w-1/2 relative flex justify-center">
+                <div class="relative w-full max-w-md">
+                    <div class="absolute -inset-4 gradient-bg rounded-[3rem] opacity-20 blur-2xl"></div>
+                    <div class="glass-card p-10 rounded-[2.5rem] shadow-2xl relative z-10 border border-white/50 text-center">
+                        <div id="hero-auth-card">
+                            <div class="flex items-center space-x-4 mb-8 text-left">
+                                <div class="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center">
+                                    <i class="fas fa-user text-slate-300 text-xl"></i>
+                                </div>
+                                <div class="space-y-2">
+                                    <div class="w-32 h-4 bg-slate-200 rounded-full"></div>
+                                    <div class="w-20 h-3 bg-slate-100 rounded-full"></div>
+                                </div>
+                            </div>
+                            <button onclick="goToLogin()" class="w-full py-4 bg-indigo-600 text-white rounded-xl text-sm font-bold shadow-lg">
+                                連携してログイン
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Origin Section -->
+    <section id="about" class="py-24 bg-white text-center md:text-left">
+        <div class="max-w-4xl mx-auto px-4">
+            <div class="bg-slate-50 rounded-[2.5rem] p-10 md:p-16 border border-slate-100">
+                <h2 class="text-3xl font-bold mb-6 italic">Why Noppo Auth?</h2>
+                <p class="text-slate-600 leading-relaxed mb-6">
+                    Noppo Authは、Noppo Studioが開発している **NoppoBrowser** や **NoppoDT** （1対1のファイル転送サービス）といった複数のツール間で、「いちいちログインし直すのが面倒くさい」という、極めて個人的で切実な問題を解決するために作られました。
+                </p>
+                <p class="text-slate-600 leading-relaxed mb-6">
+                    最初は単なる内部向けの「使い回しログイン」でしたが、自作ツールを公開する際にわざわざ独自の認証を組む手間に嫌気がさし、「どうせなら誰でも使えるように共通化してしまおう」という考えから今の形になっています。
+                </p>
+                <p class="text-slate-600 leading-relaxed">
+                    美談はありません。ただ、私たちが欲しかった機能を、あなたもそのまま使えるようにしただけです。GitHubにコードを探しに行く必要もありません。ここにあるコードだけで、あなたのツールにもログイン機能を付けられます。
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits Section -->
+    <section id="benefits" class="py-32 bg-white">
+        <div class="max-w-6xl mx-auto px-4 text-center">
+            <span class="text-indigo-600 font-bold tracking-widest uppercase text-sm mb-4 block">Benefits</span>
+            <h2 class="text-4xl font-bold mb-20">Noppo Authを使うメリット</h2>
+            <div class="grid md:grid-cols-3 gap-12">
+                <div class="p-8 group">
+                    <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-fingerprint text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4">一度のログインでOK</h3>
+                    <p class="text-slate-500 text-sm leading-relaxed">NoppoStudio系サービスを始め、対応サイトならどこでも再入力不要でログイン状態を維持。</p>
+                </div>
+                <div class="p-8 group">
+                    <div class="w-16 h-16 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-envelope-open-text text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4">スマートな会員登録</h3>
+                    <p class="text-slate-500 text-sm leading-relaxed">メールアドレスや設定した表示名がスムーズに連携されるため、面倒なフォーム入力は不要です。</p>
+                </div>
+                <div class="p-8 group">
+                    <div class="w-16 h-16 bg-pink-50 text-pink-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                        <i class="fas fa-user-check text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4">自分らしいIDで</h3>
+                    <p class="text-slate-500 text-sm leading-relaxed">共通プロフィール（display_name）により、どのサイトでも「いつもの自分」として即座に活動開始。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Developers Full Section -->
+    <section id="developers" class="py-32 bg-slate-900 text-white">
+        <div class="max-w-5xl mx-auto px-4">
+            <div class="text-center mb-16">
+                <span class="text-indigo-400 font-bold tracking-widest uppercase text-sm mb-4 block">For Developers</span>
+                <h2 class="text-4xl font-bold mb-4">導入ガイド</h2>
+                <p class="text-slate-400">GitHubリポジトリはありません。このページが公式ドキュメントです。</p>
+            </div>
+
+            <div class="space-y-12">
+                <!-- Config -->
+                <div>
+                    <h3 class="text-xl font-bold mb-4 flex items-center">
+                        <span class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-sm mr-3">1</span>
+                        共通設定
+                    </h3>
+                    <div class="code-block">
+                        <pre><code>const AUTH_WORKER_URL = "https://noppo-auth.noppo5319.workers.dev";
+const SUPABASE_URL = "https://vvavasrdxguqkiigcxkl.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2YXZhc3JkeGd1cWtpaWdjeGtsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0MTk5ODcsImV4cCI6MjA4Mjk5NTk4N30.CVq3lyRbxek7Ejs4tP5sN9-0JNEXSLtCsC2Pj-skFFQ";</code></pre>
+                    </div>
+                </div>
+
+                <!-- Login Logic -->
+                <div>
+                    <h3 class="text-xl font-bold mb-4 flex items-center">
+                        <span class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-sm mr-3">2</span>
+                        ログイン機能
+                    </h3>
+                    <div class="code-block">
+                        <pre><code>function goToLogin() {
+    const currentUrl = encodeURIComponent(window.location.href);
+    window.location.href = `${AUTH_WORKER_URL}?redirect=${currentUrl}`;
+}</code></pre>
+                    </div>
+                </div>
+
+                <!-- Token Handling -->
+                <div>
+                    <h3 class="text-xl font-bold mb-4 flex items-center">
+                        <span class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-sm mr-3">3</span>
+                        ユーザー情報の取得
+                    </h3>
+                    <div class="code-block">
+                        <pre><code>// 1. URLからトークンを抽出して保存する (ページロード時に実行)
+function checkToken() {
+    const token = new URLSearchParams(window.location.search).get('token');
+    if (token) {
+        localStorage.setItem('noppo_token', token);
+        // URLを綺麗にする
+        window.history.replaceState({}, document.title, window.location.origin + window.location.pathname);
+    }
+}
+
+// 2. トークンを使ってユーザーデータを取得
+async function getUser() {
+    const token = localStorage.getItem('noppo_token');
+    if (!token) return null;
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        headers: { "Authorization": `Bearer ${token}`, "apikey": SUPABASE_KEY }
+    });
+    return res.ok ? await res.json() : null;
+}</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-20 bg-white border-t border-slate-200">
+        <div class="max-w-6xl mx-auto px-4 text-center">
+            <div class="flex items-center justify-center space-x-2 mb-8">
+                <div class="w-10 h-10 gradient-bg rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-key text-white text-sm"></i>
+                </div>
+                <span class="text-2xl font-bold tracking-tight">Noppo Auth</span>
+            </div>
+            <div class="flex flex-wrap justify-center gap-8 text-sm font-medium text-slate-500 mb-10">
+                <button onclick="toggleModal(true)" class="hover:text-indigo-600 transition">利用規約・プライバシーポリシー</button>
+                <a href="https://studio.noppo.f5.si" target="_blank" class="hover:text-indigo-600 transition">Noppo Studio</a>
+            </div>
+            <p class="text-slate-400 text-xs">© 2026 Noppo Studio. <br class="md:hidden"> Powered by NoppoBrowser & NoppoDT Ecosystem.</p>
+        </div>
+    </footer>
+
+    <!-- Modal for Terms & Privacy -->
+    <div id="terms-modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 modal-overlay" onclick="toggleModal(false)"></div>
+        <div class="bg-white w-full max-w-2xl max-h-[80vh] rounded-3xl relative z-10 shadow-2xl overflow-hidden flex flex-col">
+            <div class="p-6 border-bottom flex items-center justify-between bg-slate-50">
+                <h3 class="font-bold text-xl">利用規約・プライバシーポリシー</h3>
+                <button onclick="toggleModal(false)" class="text-slate-400 hover:text-slate-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="p-8 overflow-y-auto text-slate-600 leading-relaxed text-sm space-y-8">
+                <section>
+                    <h4 class="text-slate-900 font-bold text-lg mb-3">利用規約</h4>
+                    <p class="mb-4 font-bold">1. サービスの概要</p>
+                    <p class="mb-4">本サービスは、Noppo Studioが開発するアプリケーションおよび外部の開発者が公開するウェブサイトにおいて、共通のIDでログインを可能にするオープンソース認証基盤です。</p>
+                    <p class="mb-4 font-bold">2. 禁止事項</p>
+                    <ul class="list-disc pl-5 space-y-2">
+                        <li>他人のアカウント情報の不正使用。</li>
+                        <li>サーバーへの過度な負荷をかける行為。</li>
+                        <li>運営を妨害する行為。</li>
+                    </ul>
+                    <p class="my-4 font-bold">3. 免責事項</p>
+                    <p>当組織は、本サービスに起因してユーザーに生じたあらゆる損害について、一切の責任を負いません。本サービスは現状のまま提供されます。</p>
+                </section>
+
+                <hr class="border-slate-100">
+
+                <section>
+                    <h4 class="text-slate-900 font-bold text-lg mb-3">プライバシーポリシー</h4>
+                    <p class="mb-4 font-bold">1. 収集する情報</p>
+                    <p class="mb-4">本サービスでは、メールアドレス、表示名（display_name）、認証トークン、ログイン日時を収集・保持します。</p>
+                    <p class="mb-4 font-bold">2. 情報の共有（外部サイトへの提供）</p>
+                    <p class="mb-4">ユーザーが本サービスを利用して外部サイトにログインした場合、メールアドレス、表示名、一意のユーザーIDが提供されます。ログイン時の「許可」により同意したものとみなされます。</p>
+                    <p class="mb-4 font-bold">3. セキュリティ</p>
+                    <p>本サービスはSupabaseの強固なインフラを使用しており, パスワードは暗号化され、当組織が直接閲覧することはありません。</p>
+                </section>
+
+                <div class="pt-6 text-xs text-slate-400 border-t border-slate-100">
+                    最終更新日: 2026年1月3日<br>
+                    Noppo Studio<br>
+                    公式サイト: https://studio.noppo.f5.si
+                </div>
+            </div>
+            <div class="p-4 bg-slate-50 text-right border-t border-slate-100">
+                <button onclick="toggleModal(false)" class="px-6 py-2 bg-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-300 transition">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Noppo Auth Script Execution -->
+    <script>
+        const AUTH_WORKER_URL = "https://noppo-auth.noppo5319.workers.dev";
+        const SUPABASE_URL = "https://vvavasrdxguqkiigcxkl.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2YXZhc3JkeGd1cWtpaWdjeGtsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0MTk5ODcsImV4cCI6MjA4Mjk5NTk4N30.CVq3lyRbxek7Ejs4tP5sN9-0JNEXSLtCsC2Pj-skFFQ";
+
+        function toggleModal(show) {
+            const modal = document.getElementById('terms-modal');
+            modal.style.display = show ? 'flex' : 'none';
+            document.body.style.overflow = show ? 'hidden' : '';
+        }
+
+        function goToLogin() {
+            const currentUrl = encodeURIComponent(window.location.href);
+            window.location.href = `${AUTH_WORKER_URL}?redirect=${currentUrl}`;
+        }
+
+        function logout() {
+            localStorage.removeItem('noppo_token');
+            const currentUrl = encodeURIComponent(window.location.href);
+            window.location.href = `${AUTH_WORKER_URL}/logout?redirect=${currentUrl}`;
+        }
+
+        async function loadUser() {
+            const token = localStorage.getItem('noppo_token');
+            if (!token) return null;
+            try {
+                const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+                    headers: { "Authorization": `Bearer ${token}`, "apikey": SUPABASE_KEY }
+                });
+                return response.ok ? await response.json() : null;
+            } catch { return null; }
+        }
+
+        async function init() {
+            const params = new URLSearchParams(window.location.search);
+            const token = params.get('token');
+            if (token) {
+                localStorage.setItem('noppo_token', token);
+                window.history.replaceState({}, document.title, window.location.origin + window.location.pathname);
+            }
+
+            const user = await loadUser();
+            const authStatus = document.getElementById('auth-status');
+            const heroCard = document.getElementById('hero-auth-card');
+
+            if (user) {
+                const name = user.user_metadata.display_name || user.email;
+                authStatus.innerHTML = `
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm font-bold text-slate-600 hidden sm:inline">${name}</span>
+                        <button onclick="logout()" class="text-slate-400 hover:text-red-500 text-sm font-bold transition">
+                            ログアウト
+                        </button>
+                    </div>
+                `;
+                heroCard.innerHTML = `
+                    <div class="flex items-center space-x-4 mb-8 text-left">
+                        <div class="w-14 h-14 rounded-2xl gradient-bg flex items-center justify-center shadow-lg">
+                            <i class="fas fa-check text-white text-xl"></i>
+                        </div>
+                        <div class="space-y-1">
+                            <div class="text-slate-800 font-bold text-sm">${name}</div>
+                            <div class="text-slate-400 text-xs">Noppo Auth 接続中</div>
+                        </div>
+                    </div>
+                    <div class="p-4 bg-indigo-50 rounded-xl text-indigo-700 text-sm font-bold mb-4">おかえりなさい！</div>
+                    <a href="#developers" class="block w-full py-4 text-slate-500 text-sm font-bold hover:text-indigo-600 transition">導入ガイドを見る</a>
+                `;
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+
+</body>
+</html>
